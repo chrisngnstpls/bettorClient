@@ -15,6 +15,10 @@ class BetModal extends Component {
         // console.log('props inside bet modal', props)
         
         this.state = {
+            keymasterAddress:'',
+            initiator:'',
+            acceptor:'',
+            keyMasterFee:'',
             gas:props.gas,
             betWinner:'',
             betInstance:null,
@@ -24,7 +28,8 @@ class BetModal extends Component {
             contractLocation:props.contractLocation,
             contractBalance:0,
             betStatus:null,
-            betReason:''
+            betReason:'',
+            
         }
     }
     
@@ -33,8 +38,23 @@ class BetModal extends Component {
         let finalValue = Web3.utils.fromWei(_value, 'ether');
         return await finalValue;
     }
+    /**
+     * Storage reading : 
+     * [0] blockunbmer
+     * [1] initiator address
+     * [2] acceptor address
+     * [3] factory contract address
+     * [4] bet amount
+     * [5] bet reason (hexToAscii)
+     * [6] keymaster address (private)
+     * [7] initiator canceled (bool)
+     * [8] acceptor canceled (bool)
+     * [9] keymaster Fee
+     * 
+     */
 
     componentDidMount = async() => {
+        const web3 = this.state.web3
         const _betInstance = await new this.state.web3.eth.Contract(
             Bet.abi, this.state.contractLocation
         )
@@ -42,7 +62,29 @@ class BetModal extends Component {
         let _betStatus = await _betInstance.methods.getBetStatus().call({gas:this.state.gas})
         let _betReason = await _betInstance.methods.reason().call({gas:this.state.gas})
         let finalValue = Web3.utils.fromWei(_contractBalance, 'ether')
-        this.setState({ betInstance:_betInstance, contractBalance:finalValue, betReason:_betReason,})
+        
+        let _initiatorAddress = await web3.eth.getStorageAt(this.state.contractLocation, 1, (err,res) => {
+            if(err) throw err;
+            return res;
+        });
+        let _acceptorAddress = await web3.eth.getStorageAt(this.state.contractLocation, 2, (err,res) => {
+            if(err) throw err;
+            return res
+        });
+        let _keyMasterAddress = await web3.eth.getStorageAt(this.state.contractLocation, 6, (err,res) => {
+            if(err) throw err;
+            //console.log(res)
+            return res
+        });
+
+        this.setState({ 
+            betInstance:_betInstance, 
+            contractBalance:finalValue, 
+            betReason:_betReason, 
+            initiator:_initiatorAddress,
+            acceptor:_acceptorAddress,
+            keymasterAddress:_keyMasterAddress
+        })
         this.getBetStatus()
     }
 
@@ -130,13 +172,13 @@ class BetModal extends Component {
     }
 
     keyMasterSign = async(event, data) =>{
-        const _add = await this.state.myaddress
+        const _add = await this.state.storage
         console.log(_add)
     }
 
     render() {
         const {Cell, Row} = Table
-
+        const acceptor = this.state.acceptor
         return (
             <Modal
                 open={this.props.modalOpen}
@@ -162,6 +204,15 @@ class BetModal extends Component {
                             </Menu.Item>
                         </Menu>
                     </Segment.Group>
+                    <Segment.Group style={{padding:'3px'}}>
+                        <Header as={'h4'}>Initiator : {this.state.initiator.replace('000000000000000000000000', '')}</Header>
+                    </Segment.Group>
+                    <Segment.Group style={{padding:'3px'}}>
+                        <Header as={'h4'}>Acceptor : {acceptor == '0x0' ? 'Not yet accepted' : this.state.acceptor.replace('000000000000000000000000', '')}</Header>
+                    </Segment.Group>
+                    <Segment.Group style={{padding:'3px'}}>
+                        <Header as={'h4'}>KeyMaster : {this.state.keymasterAddress.replace('000000000000000000000000', '')}</Header>
+                </Segment.Group>
                 </Segment>
                     <Segment raised>
                         <Segment.Group>

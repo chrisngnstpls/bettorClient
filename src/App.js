@@ -38,9 +38,15 @@ class App extends Component {
        * uncomment for local testnet
        * 
        */
+
       // const factoryInstance = await new web3.eth.Contract(
-      //   BetFactory.abi, deployedNetwork && REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
+      //   BetFactory.abi, deployedNetwork && process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
       // );
+
+      /***
+       * Uncomment for goerli testnet
+       * 
+       */
       const factoryInstance = await new web3.eth.Contract(
         BetFactory.abi, process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_TESTNET
       );
