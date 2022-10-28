@@ -1,5 +1,5 @@
 import React, { Component } from 'react'
-import { Form, Input, Button,Table,Header, Loader, Segment, Container } from 'semantic-ui-react'
+import { Form, Input, Button,Table,Header, Card, Segment, Container, Image } from 'semantic-ui-react'
 import './App.css';
 import getWeb3 from './ethereum/web3';
 import BetFactory from './contracts/BetFactory.json'
@@ -67,6 +67,11 @@ class App extends Component {
       showModal: !this.state.showModal
     })
   
+  }
+
+  connectWallet = async(event) => {
+    const web3 = await getWeb3();
+    const accounts = await web3.getAccounts();
   }
 
   onSubmit = async (event) =>{
@@ -182,20 +187,32 @@ class App extends Component {
   render() {
     const{Row, HeaderCell, Body} = Table;
     const {allBets} = this.state;
-    if(!this.state.web3){
+    if(this.state.accounts == null){
       
       return (
-          <div>
-            <Segment>
-              <Loader>Loading Web 3 components</Loader>
+            <Segment raised placeholder className='segment centered'>
+              <Segment.Group style={{padding:'10px'}}>
+              <Card centered>
+              <Image alt='logo' src="./pepeLoad.png"/>
+              <Card.Content>
+                <Card.Header>theBettor</Card.Header>
+                <Card.Meta>bet a fren</Card.Meta>
 
+                <Card.Description>
+                  The fastest way to lose your money on silly bets
+                </Card.Description>
+              </Card.Content>
+              <Card.Content>
+                <Button onClick={this.connectWallet}>Connect</Button>
+              </Card.Content>
+              </Card>
+              </Segment.Group>
             </Segment>
-          </div>
         )
     
     } else if(this.state.web3) {
       return (
-        <Layout address={this.state.syncedAddress}>
+        <Layout address={this.state.syncedAddress} web3={this.state.web3}>
           <Form onSubmit={this.onSubmit}>
             <Segment  raised>
               <Segment.Group>

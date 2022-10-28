@@ -1,6 +1,6 @@
 
 import React, {Component} from 'react'
-import {Modal, Header, Button, Icon, Table, Form, Input, Label, Segment, TableBody, TableCell, TableRow, Menu, Dropdown} from 'semantic-ui-react'
+import {Modal, Header, Button, Table, Form, Segment, Message, Dropdown, Menu} from 'semantic-ui-react'
 import Bet from '../contracts/Bet.json'
 import getWeb3 from '../ethereum/web3'
 import Web3 from 'web3'
@@ -112,9 +112,25 @@ class BetModal extends Component {
         //console.log('state values : ' + this.state.betWinner)
         this.props.handleClose();
     }
-    resolveBet = (event, data) => {
-        console.log(this.state.cancelInitiator, this.state.cancelAcceptor)
-        
+    resolveBet = async (event, data) => {
+        const _winner = this.state.betWinner
+        try{
+            if(Web3.utils.isAddress(_winner)){
+                
+                await this.state.betInstance.methods.resolveBet(_winner).send({from:this.props.syncedAddress[0], gas:this.state.gas})
+                .on('transactionHash', (hash) => {
+                    console.log('transaction hash : ', hash)
+    
+                })
+                .on('error', (err) => {
+                    console.log('error : ',err )
+                })
+            } else {
+                alert('Invalid choice')
+            }
+        } catch(err){
+            console.log(err)
+        }
     }
 
     acceptBet = async (event, data) => {
@@ -131,9 +147,7 @@ class BetModal extends Component {
             })
         } catch(err){
             alert(await err.message)
-
         }
-
     }
 
     agreedCancel = async(event, data) => {
@@ -166,7 +180,6 @@ class BetModal extends Component {
         } catch(err){
             alert( err.message)
         }
-
     }
 
     getContractBalance = async(event, data) => {
@@ -177,8 +190,6 @@ class BetModal extends Component {
         } catch(err){
             alert(await err.message)
         }
-
-        
     }
     
     getBetStatus = async(event, data) => {
@@ -199,8 +210,6 @@ class BetModal extends Component {
             console.log(err)
             alert(await err.message)
         }
-
-
     }
 
     keyMasterSign = async(event, data) =>{
@@ -225,146 +234,188 @@ class BetModal extends Component {
             }
         ]
 
-        
-        return (
-            <Modal
+        if(this.state.betStatus == 'Resolved') {
+            
+            return(
+                <Modal
                 open={this.props.modalOpen}
                 size='small'
                 closeOnEscape={false}
                 id='wholeModal'
-            >
-            <Segment>
-                <Segment.Group style={{padding:'10px'}} raised>                
-                <Header id='modalHeader' as={'h3'} conent={'confirm?'}>Bet : {this.state.contractLocation}</Header>
-                </Segment.Group>
-            </Segment>
-            
+                >
                 <Modal.Content>
+                
+
                 <Segment raised>
-                    <Segment.Group> 
+                    <Segment.Group style={{padding:'10px'}}>
+                        <Header id='modalHeader' as={'h3'} conent={'confirm?'}>This Bet has been resolved</Header>
+                    </Segment.Group>
+                    <Segment.Group>
                         <Menu secondary>
                             <Menu.Item position='left'>
-                                <Modal.Header as={'h3'} id='modalReason'> Reason: {this.state.betReason}</Modal.Header>
+                                <Modal.Header as={'h3'} id='modalReason'> Bet Reason: {this.state.betReason}</Modal.Header>
                             </Menu.Item>
                             <Menu.Item position='right' as={'h4'}>
                                 <img alt='logo' src="./logo192.png"/>
                             </Menu.Item>
                         </Menu>
                     </Segment.Group>
-                    <Segment.Group style={{padding:'3px'}}>
-                        <Header as={'h4'}>Initiator : {this.state.initiator}</Header>
-                    </Segment.Group>
-                    <Segment.Group style={{padding:'3px'}}>
-                        <Header as={'h4'}>Acceptor : {this.state.acceptor == '0x0000000000000000000000000000000000000000' ? 'Not yet accepted' : this.state.acceptor.replace('000000000000000000000000', '')}</Header>
-                    </Segment.Group>
-                    <Segment.Group style={{padding:'3px'}}>
-                        <Header as={'h4'}>KeyMaster : {this.state.keymasterAddress}</Header>
-                </Segment.Group>
+                
                 </Segment>
-                    <Segment raised>
-                        <Segment.Group>
-                            <Table celled columns={4}>
-                                <Table.Body style={{overflow:'auto'}}>
-                                    <Table.Row  mobile={16} tablet={8} computer={5} textAlign='center'>
-                                        <Table.Cell>
-                                            <Button color='green' onClick={this.acceptBet}>Accept Bet</Button>
-                                        </Table.Cell>
-                                        
-                                        <Table.Cell>
-                                            <Segment>
-                                                <Segment.Group style={{padding:'10px'}}>
-                                                    <Header as={'h4'}> Bet parties </Header>
-                                                    <p>Initiator : {this.state.cancelInitiator == 0 ? <p style={{color:'green'}}>Not canceled</p> :  <p style={{color:'red'}}>Has canceled</p>}</p>
-                                                    <p>Acceptor : {this.state.cancelInitiator == 0 ?  <p style={{color:'green'}}>Not canceled</p> :  <p style={{color:'red'}}>Has canceled</p>}</p>
-                                                </Segment.Group>
-                                                    <Button color = 'yellow' onClick={this.agreedCancel}>Aggreed Cancel</Button>
-                                            </Segment>
-                                            
-                                        </Table.Cell>
-                                        
-                                        <Table.Cell>                                    
-                                        <Form onSubmit={this.resolveBet}> 
-                                        <Segment >
-                                        <Header id='winnerHeader' as={'h4'}>Bet Winner</Header>                 
-                                            <Form.Group widths="equal"> 
-                                                {/*<Form.Field
-                                                    id="form-input-control-betWinner"
-                                                    value={this.state.betWinner}
-                                                    type='text'
-                                                    control={Input}
-                                                    maxLength='42'
-                                                    placeholder='0x00...00'
-                                                    onChange={event => this.setState({betWinner:event.target.value})}
-                                                />*/}
-                                                <Dropdown
-                                                    placeholder='Select Winner'
-                                                    fluid
-                                                    selection
-                                                    options={dropDownOptions}
-                                                    value={this.state.betWinner}
-                                                    onChange={(event,{value}) => this.setState({betWinner:value})}
-                                                    
-                                                /> 
-                                                </Form.Group>
-                                                </Segment>
-                                                <Segment><Button color='red'>Resolve Bet</Button></Segment>
-                                            </Form>
-                                        </Table.Cell>
-                                    </Table.Row>
-                                    <Table.Row textAlign='center'>
-                                        <Table.Cell>
-                                            <Button onClick={this.revertBet}>Revert Bet</Button>
-                                        </Table.Cell>
-                                        
-                                        <Table.Cell>
-                                            <Table.Row>
-                                                <Table.Cell>
-                                                    <h4>{this.state.contractBalance} ⟠ Eth </h4>
-                                                </Table.Cell>
-                                            </Table.Row>
-                                            <Table.Row>
-                                                <Table.Cell><Button onClick={this.getContractBalance}>Get Balance</Button></Table.Cell>
-                                            </Table.Row>
-                                        </Table.Cell>
-                                        
-                                        <Table.Cell>
-                                            <Table.Row>
-                                                <Table.Cell>
-                                                    <h4>{this.state.betStatus}</h4>                                            
-                                                </Table.Cell>
-                                            </Table.Row>                                 
-                                            <Table.Row>
-                                                <Table.Cell><Button onClick={this.getBetStatus}>Get Status</Button></Table.Cell>
-                                            </Table.Row> 
-                                        </Table.Cell>
-                                    </Table.Row>
-                                    <Table.Row textAlign='center'>
-                                    </Table.Row>
-                                </Table.Body>
-                            </Table>
-                        </Segment.Group>
-                    </Segment>
                 </Modal.Content>
                 <Modal.Actions>
-                    <Button
-                        positive
-                        type='button'
-                        icon='remove'
-                        onClick={this.props.handleClose}
-                        content='Cancel'
-                    />
-                    <Button
-                        positive
-                        type='button'
-                        icon='checkmark'
-                        onClick={this.confirmClick}
-                        conent='EISAI PETSA'
-                    />
+                <Button
+                    positive
+                    type='button'
+                    icon='checkmark'
+                    onClick={this.confirmClick}
+                    conent='EISAI PETSA'
+                />
+            </Modal.Actions>
 
-                </Modal.Actions>
-            
-            </Modal>
-        )
+                </Modal>
+            )
+        
+        } else {
+            return (
+                <Modal
+                    open={this.props.modalOpen}
+                    size='small'
+                    closeOnEscape={false}
+                    id='wholeModal'
+                >
+                <Segment>
+                    <Segment.Group style={{padding:'10px'}} raised>                
+                    <Header id='modalHeader' as={'h3'} conent={'confirm?'}>Bet : {this.state.contractLocation}</Header>
+                    </Segment.Group>
+                </Segment>
+                
+                    <Modal.Content>
+                    <Segment raised>
+                        <Segment.Group> 
+                            <Menu secondary>
+                                <Menu.Item position='left'>
+                                    <Modal.Header as={'h3'} id='modalReason'> Reason: {this.state.betReason}</Modal.Header>
+                                </Menu.Item>
+                                <Menu.Item position='right' as={'h4'}>
+                                    <img alt='logo' src="./logo192.png"/>
+                                </Menu.Item>
+                            </Menu>
+                        </Segment.Group>
+                        <Segment.Group style={{padding:'3px'}}>
+                            <Header as={'h4'}>Initiator : {this.state.initiator}</Header>
+                        </Segment.Group>
+                        <Segment.Group style={{padding:'3px'}}>
+                            <Header as={'h4'}>Acceptor : {this.state.acceptor == '0x0000000000000000000000000000000000000000' ? 'Not yet accepted' : this.state.acceptor.replace('000000000000000000000000', '')}</Header>
+                        </Segment.Group>
+                        <Segment.Group style={{padding:'3px'}}>
+                            <Header as={'h4'}>KeyMaster : {this.state.keymasterAddress}</Header>
+                    </Segment.Group>
+                    </Segment>
+                        <Segment raised>
+                            <Segment.Group>
+                                <Table celled columns={4}>
+                                    <Table.Body style={{overflow:'auto'}}>
+                                        <Table.Row  mobile={16} tablet={8} computer={5} textAlign='center'>
+                                            <Table.Cell>
+                                                <Button color='green' onClick={this.acceptBet}>Accept Bet</Button>
+                                            </Table.Cell>
+                                            
+                                            <Table.Cell>
+                                                <Segment>
+                                                    <Segment.Group style={{padding:'10px'}}>
+                                                        <Header as={'h4'}> Bet parties </Header>
+                                                        <Message>Initiator : {this.state.cancelInitiator == 0 ? <p style={{color:'green'}}>Not canceled</p> :  <p style={{color:'red'}}>Has canceled</p>}</Message>
+                                                        <Message>Acceptor : {this.state.cancelInitiator == 0 ?  <p style={{color:'green'}}>Not canceled</p> :  <p style={{color:'red'}}>Has canceled</p>}</Message>
+                                                    </Segment.Group>
+                                                        <Button color = 'yellow' onClick={this.agreedCancel}>Aggreed Cancel</Button>
+                                                </Segment>
+                                                
+                                            </Table.Cell>
+                                            
+                                            <Table.Cell>                                    
+                                            <Form onSubmit={this.resolveBet}> 
+                                            <Segment >
+                                            <Header id='winnerHeader' as={'h4'}>Bet Winner</Header>                 
+                                                <Form.Group widths="equal"> 
+                                                    {/*<Form.Field
+                                                        id="form-input-control-betWinner"
+                                                        value={this.state.betWinner}
+                                                        type='text'
+                                                        control={Input}
+                                                        maxLength='42'
+                                                        placeholder='0x00...00'
+                                                        onChange={event => this.setState({betWinner:event.target.value})}
+                                                    />*/}
+                                                    <Dropdown
+                                                        placeholder='Select Winner'
+                                                        fluid
+                                                        selection
+                                                        options={dropDownOptions}
+                                                        value={this.state.betWinner}
+                                                        onChange={(event,{value}) => this.setState({betWinner:value})}
+                                                        
+                                                    /> 
+                                                    </Form.Group>
+                                                    </Segment>
+                                                    <Segment><Button color='red'>Resolve Bet</Button></Segment>
+                                                </Form>
+                                            </Table.Cell>
+                                        </Table.Row>
+                                        <Table.Row textAlign='center'>
+                                            <Table.Cell>
+                                                <Button onClick={this.revertBet}>Revert Bet</Button>
+                                            </Table.Cell>
+                                            
+                                            <Table.Cell>
+                                                <Table.Row>
+                                                    <Table.Cell>
+                                                        <Header as={'h4'}>{this.state.contractBalance} ⟠ Eth </Header>
+                                                    </Table.Cell>
+                                                </Table.Row>
+                                                <Table.Row>
+                                                    <Table.Cell><Button onClick={this.getContractBalance}>Get Balance</Button></Table.Cell>
+                                                </Table.Row>
+                                            </Table.Cell>
+                                            
+                                            <Table.Cell>
+                                                <Table.Row>
+                                                    <Table.Cell>
+                                                        <Header as={'h4'}>{this.state.betStatus}</Header>                                            
+                                                    </Table.Cell>
+                                                </Table.Row>                                 
+                                                <Table.Row>
+                                                    <Table.Cell><Button onClick={this.getBetStatus}>Get Status</Button></Table.Cell>
+                                                </Table.Row> 
+                                            </Table.Cell>
+                                        </Table.Row>
+                                    </Table.Body>
+                                </Table>
+                            </Segment.Group>
+                        </Segment>
+                    </Modal.Content>
+                    <Modal.Actions>
+                        <Button
+                            positive
+                            type='button'
+                            icon='remove'
+                            onClick={this.props.handleClose}
+                            content='Cancel'
+                        />
+                        <Button
+                            positive
+                            type='button'
+                            icon='checkmark'
+                            onClick={this.confirmClick}
+                            conent='EISAI PETSA'
+                        />
+    
+                    </Modal.Actions>
+                
+                </Modal>
+            )
+        }
+
     }
 }
 
