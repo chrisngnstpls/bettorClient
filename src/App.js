@@ -70,8 +70,8 @@ class App extends Component {
   }
 
   connectWallet = async(event) => {
-    const web3 = await getWeb3();
-    const accounts = await web3.getAccounts();
+    await window.ethereum.enable().then(()=>{window.location.reload()})
+
   }
 
   onSubmit = async (event) =>{
