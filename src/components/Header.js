@@ -1,5 +1,5 @@
-import React,{Component, useEffect} from "react"
-import { Button, Menu } from "semantic-ui-react"
+import React from "react"
+import { Menu } from "semantic-ui-react"
 import './Header.css'
 
 const HeaderComponent = (props) => {

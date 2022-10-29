@@ -7,6 +7,7 @@ import Bet from './contracts/Bet.json'
 import BetRow from './components/BetRow';
 import Web3 from 'web3';
 import Layout from './components/Layout';
+import BetModel from './models/BetModel';
 
 
 
@@ -39,17 +40,17 @@ class App extends Component {
        * 
        */
 
-      // const factoryInstance = await new web3.eth.Contract(
-      //   BetFactory.abi, deployedNetwork && process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
-      // );
+      const factoryInstance = await new web3.eth.Contract(
+        BetFactory.abi, deployedNetwork && process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
+      );
 
       /***
        * Uncomment for goerli testnet
        * 
        */
-      const factoryInstance = await new web3.eth.Contract(
-        BetFactory.abi, process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_TESTNET
-      );
+      // const factoryInstance = await new web3.eth.Contract(
+      //   BetFactory.abi, process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_TESTNET
+      // );
       
       const syncedAddress = accounts[0]
 
@@ -90,7 +91,7 @@ class App extends Component {
        }
     }
 
-    if((keyMaster != 0x0000000000000000000000000000000000000000) && (checkLength(reason)) && (betValue > 0.00001) && correctAddress) {
+    if((keyMaster !== 0x0000000000000000000000000000000000000000) && (checkLength(reason)) && (betValue > 0.00001) && correctAddress) {
       
       try {
         const cleanBet = Web3.utils.toWei(betValue, 'ether')
@@ -118,23 +119,43 @@ class App extends Component {
 
 
   getAllBets = async () => {
-    function Bet(_id, _location, _initiator){
-      this.id = _id
-      this.location = _location
-      this.initiator = _initiator
-
-    }
+    // function Bet(_id, _location, _initiator, _balance, _reason, _status){
+    //   this.id = _id
+    //   this.location = _location
+    //   this.initiator = _initiator
+    //   this.balance = _balance
+    //   this.reason = _reason
+    //   this.status = _status
+    // }
     
-    const{allBets,gas,factoryInstance} = this.state;
+    const{allBets,gas,factoryInstance,web3} = this.state;
     
     let _allBets = await factoryInstance.methods.allBets().call({gas:gas})
     let betListLength = _allBets.length
+    let cleanStatus;
+    
+    
     for (let i = 0; i<betListLength; i++){
-      let _bet = new Bet(_allBets[i].betIndex, _allBets[i].location, _allBets[i].initiator)
+      let betDetails = new web3.eth.Contract(Bet.abi, _allBets[i].location)
+      let _contractBalance = await betDetails.methods.getBalance().call({gas:this.state.gas})
+      let _betStatus = await betDetails.methods.getBetStatus().call({gas:this.state.gas})
+      let _betReason = await betDetails.methods.reason().call({gas:this.state.gas})
+      let ethBalance = Web3.utils.fromWei(_contractBalance, 'ether')
+      
+      if (_betStatus === '0'){
+          cleanStatus = 'Initiated'
+          } else if (_betStatus === '1'){
+              cleanStatus = 'Running'
+          } else if (_betStatus === '2'){
+              cleanStatus = 'Resolved'
+      }
+      
+      let _bet = new BetModel(_allBets[i].betIndex, _allBets[i].location, _allBets[i].initiator,ethBalance,_betReason,cleanStatus)
+      
       allBets.push(_bet)
     }
     this.setState({allBets})
-    //console.log(allBets)
+
   }
   
   handleFromParent = async (location) => {
@@ -168,12 +189,14 @@ class App extends Component {
       
       return(
         <BetRow
-          
           positive
           key={k}
           id={i.id}
           location={i.location}
           initiator={i.initiator}
+          balance={i.balance}
+          reason={i.reason}
+          status={i.status}
           accounts = {this.state.accounts}
           handleFromParent={this.handleFromParent}
           web3={this.state.web3}
@@ -185,7 +208,6 @@ class App extends Component {
 
 
   render() {
-    const{Row, HeaderCell, Body} = Table;
     const {allBets} = this.state;
     if(this.state.accounts == null){
       
@@ -248,7 +270,7 @@ class App extends Component {
               key='fee'
               id="form-input-control-fee"
               control = {Input}
-              label = "Fee"
+              label = "Keymaster Fee"
               placeholder="fee"
               type='number'
               min='0'
@@ -260,6 +282,7 @@ class App extends Component {
               key='amount'
               id="form-input-control-bet-size"
               control={Input}
+              placeholder=''
               min='.000001'
               step='0.000001'
               type='number'
@@ -287,8 +310,10 @@ class App extends Component {
                 <Table.Header>
                   <Table.Row textAlign='center'>
                     <Table.HeaderCell colSpan='1' key='id' textAlign='center'>ID</Table.HeaderCell>
-                    <Table.HeaderCell colSpan='1' key='location'textAlign='center'>Location</Table.HeaderCell>
                     <Table.HeaderCell colSpan='1' key='initiator'textAlign='center'>Initiator</Table.HeaderCell>
+                    <Table.HeaderCell colSpan='1' key='reason'textAlign='center'>Reason</Table.HeaderCell>
+                    <Table.HeaderCell colSpan='1' key='balance'textAlign='center'>Balance</Table.HeaderCell>
+                    <Table.HeaderCell colSpan='1' key='status'textAlign='center'>Status</Table.HeaderCell>
                     <Table.HeaderCell colSpan='1' key='nana'textAlign='center'> 🍌</Table.HeaderCell>
                   </Table.Row>
                 </Table.Header>
