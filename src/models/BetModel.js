@@ -9,4 +9,4 @@ class BetModel {
     }
 }
 
-module.exports = BetModel;
+export default BetModel;
