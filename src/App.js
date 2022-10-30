@@ -40,17 +40,17 @@ class App extends Component {
        * 
        */
 
-      // const factoryInstance = await new web3.eth.Contract(
-      //   BetFactory.abi, deployedNetwork && process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
-      // );
+      const factoryInstance = await new web3.eth.Contract(
+        BetFactory.abi, deployedNetwork && process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_GANACHE
+      );
 
       /***
        * Uncomment for goerli testnet
        * 
        */
-      const factoryInstance = await new web3.eth.Contract(
-        BetFactory.abi, process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_TESTNET
-      );
+      // const factoryInstance = await new web3.eth.Contract(
+      //   BetFactory.abi, process.env.REACT_APP_FACTORY_CONTRACT_ADDRESS_TESTNET
+      // );
       
       const syncedAddress = accounts[0]
 
@@ -225,7 +225,7 @@ class App extends Component {
                 </Card.Description>
               </Card.Content>
               <Card.Content>
-                <Button onClick={this.connectWallet}>Connect</Button>
+                <Button primary onClick={this.connectWallet}>Connect</Button>
               </Card.Content>
               </Card>
               </Segment.Group>
@@ -305,7 +305,8 @@ class App extends Component {
               </Segment.Group>
             
             </Segment>
-
+            <Segment>
+              <Segment.Group raised>
               <Table structured compact='very' celled id='table' columns={4}>
                 <Table.Header>
                   <Table.Row textAlign='center'>
@@ -321,6 +322,8 @@ class App extends Component {
                   {this.renderBets()}
                 </Table.Body>
               </Table>
+              </Segment.Group>
+              </Segment>
             </Container>
         </Layout>
       );
